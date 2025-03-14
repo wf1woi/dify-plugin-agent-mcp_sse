@@ -1,4 +1,4 @@
-## Dify 1.0 Plugin MCP HTTP with SSE transport Agent strategies
+## Dify 1.0 Plugin Support MCP SSE Tools Agent strategies
 
 **Author:** [Junjie.M](https://github.com/junjiem)  
 **Version:** 0.0.1  
