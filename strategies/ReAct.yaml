@@ -1,0 +1,63 @@
+identity:
+  name: mcp_sse_ReAct
+  author: junjiem
+  label:
+    en_US: ReAct (Support MCP Tools)
+    zh_Hans: ReAct (Support MCP Tools)
+description:
+  en_US: ReAct is a basic strategy for agent, model will use the Dify and MCP tools provided to perform the task.
+  zh_Hans: ReAct 是一个基本的 Agent 策略，模型将使用提供的 Dify 和 MCP 工具来执行任务。
+parameters:
+  - name: model
+    type: model-selector
+    scope: tool-call&llm
+    required: true
+    label:
+      en_US: Model
+      zh_Hans: 模型
+  - name: tools
+    type: array[tools]
+    required: false
+    label:
+      en_US: Tools list
+      zh_Hans: 工具列表
+  - name: mcp_servers_config
+    type: string
+    required: false
+    label:
+      en_US: MCP Servers config
+      zh_Hans: MCP服务配置
+    help:
+      en_US: "MCP Servers config, support multiple MCP services. 
+        (`sse_read_timeout` determines how long (in seconds) the client will wait for a new event before disconnecting. 
+        All other HTTP operations are controlled by `timeout`.)"
+      zh_Hans: "MCP服务配置，支持多个MCP服务。
+        （`sse_read_timeout`决定客户端在断开连接之前等待新事件的时间（以秒为单位）。所有其他HTTP操作都由`timeout`控制。）"
+  - name: instruction
+    type: string
+    required: true
+    label:
+      en_US: Instruction
+      zh_Hans: 指令
+    auto_generate:
+      type: prompt_instruction
+    template:
+      enabled: true
+  - name: query
+    type: string
+    required: true
+    label:
+      en_US: Query
+      zh_Hans: 查询
+  - name: maximum_iterations
+    type: number
+    required: true
+    label:
+      en_US: Maxium Iterations
+      zh_Hans: 最大迭代次数
+    default: 3
+    min: 1
+    max: 30
+extra:
+  python:
+    source: strategies/ReAct.py
