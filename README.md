@@ -16,11 +16,11 @@ Dify official Agent strategies collection (Support MCP SSE fetch and call tools)
 
 Dify 官方 Agent 策略集合（支持 MCP SSE 发现和调用工具）。
 
-![mcp_sse_agent](./images/mcp_sse_agent.png)
+![mcp_sse_agent](_assets/mcp_sse_agent.png)
 
-![mcp_sse_agent_strategies](./images/mcp_sse_agent_strategies.png)
+![mcp_sse_agent_strategies](_assets/mcp_sse_agent_strategies.png)
 
-![mcp_sse_agent_react](./images/mcp_sse_agent_react.png)
+![mcp_sse_agent_react](_assets/mcp_sse_agent_react.png)
 
 
 MCP Servers config, support multiple MCP services. The following example:
@@ -48,7 +48,7 @@ Can install the plugin using the GitHub repository address. Visit the Dify platf
 
 可以通过 GitHub 仓库地址安装该插件。访问 Dify 平台的插件管理页，选择通过 GitHub 安装插件，输入仓库地址后，选择版本号和包文件完成安装。
 
-![install_plugin_via_github](./images/install_plugin_via_github.png)
+![install_plugin_via_github](_assets/install_plugin_via_github.png)
 
 
 
