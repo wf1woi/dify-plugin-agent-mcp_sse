@@ -26,9 +26,10 @@ class McpSseClient:
         try:
             sse_transport = await self.exit_stack.enter_async_context(
                 sse_client(url=self.config["url"],
-                           headers=self.config["headers"],
-                           timeout=self.config["timeout"],
-                           sse_read_timeout=self.config["sse_read_timeout"])
+                           headers=self.config.get("headers", None),
+                           timeout=self.config.get("timeout", 5),
+                           sse_read_timeout=self.config.get("sse_read_timeout", 300),
+                           )
             )
             read, write = sse_transport
             session = await self.exit_stack.enter_async_context(
