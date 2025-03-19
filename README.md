@@ -42,6 +42,36 @@ MCP服务配置，支持多个MCP服务。 如下示例：
 ```
 
 
+### Managed MCP Servers 托管的MCP服务器
+
+If you want to try MCP but don't know how to deploy SSE transport's MCP Server, can you try connect to [composio Managed MCP Servers](https://mcp.composio.dev).
+
+如果你想尝试 MCP，但是不知道如何部署 SSE 传输的 MCP Server，可以尝试连接 [composio 托管的 MCP 服务器](https://mcp.composio.dev)。
+
+#### Example 示例
+
+![composio_mcp_list](_assets/composio_mcp_list.png)
+
+Reference Cursor Settings, shown below:
+
+参考 Cursor 设置，如下图：
+
+![composio_mcp_cursor](_assets/composio_mcp_cursor.png)
+
+MCP Servers config, shown below:
+
+MCP服务配置，如下示例：
+
+```json
+{
+  "tavily": {
+    "url": "https://mcp.composio.dev/tavily/xxxx-xxxx-xxxx-xxxx"
+  }
+}
+```
+
+
+
 ### Installing Plugins via GitHub  通过 GitHub 安装插件
 
 Can install the plugin using the GitHub repository address. Visit the Dify platform's plugin management page, choose to install via GitHub, enter the repository address, select version number and package file to complete installation.
