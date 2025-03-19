@@ -4,9 +4,6 @@ from contextlib import AsyncExitStack
 from typing import Any
 
 import mcp.types as types
-from dify_plugin.entities import I18nObject
-from dify_plugin.entities.tool import ToolParameter, ToolParameterOption, ToolDescription, ToolProviderType
-from dify_plugin.interfaces.agent import ToolEntity, AgentToolIdentity
 from mcp import ClientSession
 from mcp.client.sse import sse_client
 
@@ -111,7 +108,7 @@ class McpSseClient:
                 logging.error(f"Error during cleanup of server ’{self.name}' session: {e}")
 
 
-def fetch_mcp_tools(clients: list[McpSseClient]) -> list[ToolEntity]:
+def fetch_mcp_tools(clients: list[McpSseClient]) -> list[types.Tool]:
     """
     Fetch MCP Servers all tools list by HTTP with SSE transport
     """
@@ -121,77 +118,13 @@ def fetch_mcp_tools(clients: list[McpSseClient]) -> list[ToolEntity]:
         for client in clients:
             try:
                 await client.initialize()
-                mcp_tools = await client.list_tools()
+                tools = await client.list_tools()
             finally:
                 await client.cleanup()
-            tools = [to_tool_entity(name=client.name, tool=tool) for tool in mcp_tools]
             all_tools.extend(tools)
         return all_tools
 
     return asyncio.run(fetch_tools())
-
-
-def to_tool_entity(name: str, tool: types.Tool) -> ToolEntity:
-    """
-    Convert a MCP Tool to a Dify ToolEntity
-    """
-    identity = AgentToolIdentity(author="junjiem",
-                                 name=tool.name,
-                                 label=I18nObject(en_US=tool.name),
-                                 provider=name,
-                                 )
-
-    parameters = []
-    input_schema = tool.inputSchema
-    required_params = input_schema.get("required", [])
-    properties = input_schema.get("properties", {})
-    options = None
-
-    for param_name, param_schema in properties.items():
-        type = param_schema.get("type", "string")
-        description = param_schema.get("description", None)
-        if type == "number":
-            param_type = ToolParameter.ToolParameterType.NUMBER
-        elif type == "boolean":
-            param_type = ToolParameter.ToolParameterType.BOOLEAN
-        elif type == "string":
-            param_type = ToolParameter.ToolParameterType.STRING
-        elif type == "array":
-            items = param_schema.get("items")
-            if "enum" in items:
-                param_type = ToolParameter.ToolParameterType.SELECT
-                options = [ToolParameterOption(value=v) for v in items["enum"]]
-            elif "type" in items:
-                param_type = ToolParameter.ToolParameterType.STRING
-                description = f"param_type: array[{items['type']}], {description}"
-            else:
-                param_type = ToolParameter.ToolParameterType.STRING
-        else:
-            param_type = ToolParameter.ToolParameterType.STRING
-
-        parameter = ToolParameter(
-            name=param_name,
-            label=I18nObject(en_US=param_name),
-            type=param_type,
-            required=param_name in required_params,
-            human_description=I18nObject(en_US=description),
-            llm_description=description,
-            options=options,
-            form=ToolParameter.ToolParameterForm.LLM
-        )
-        parameters.append(parameter)
-
-    tool_description = ToolDescription(human=I18nObject(en_US=tool.description), llm=tool.description) \
-        if tool.description else None
-    return ToolEntity(
-        identity=identity,
-        parameters=parameters,
-        description=tool_description,
-        output_schema=None,
-        provider_type=ToolProviderType.API,
-        has_runtime_parameters=False,
-        runtime_parameters={}
-    )
 
 
 def execute_mcp_tool(clients: list[McpSseClient], tool_name: str, arguments: dict[str, Any]) -> str:

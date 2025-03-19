@@ -20,9 +20,11 @@ from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     ToolPromptMessage,
     UserPromptMessage,
+    PromptMessageTool,
 )
 from dify_plugin.entities.tool import LogMetadata, ToolInvokeMessage, ToolProviderType
 from dify_plugin.interfaces.agent import AgentModelConfig, AgentStrategy, ToolEntity
+from mcp import types
 from pydantic import BaseModel, Field
 
 from utils import mcp_sse_util
@@ -78,9 +80,6 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         """
         Run FunctionCall agent application
         """
-        print('-----------------------------------')
-        print(parameters)
-
         fc_params = FunctionCallingParams(**parameters)
         query = fc_params.query
         self.query = query
@@ -93,7 +92,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         tool_instances = {tool.identity.name: tool for tool in tools} if tools else {}
 
         # Fetch MCP tools
-        clients = []
+        mcp_clients = []
         mcp_tools = []
         mcp_tool_instances = {}
         servers_config_json = fc_params.mcp_servers_config
@@ -103,13 +102,11 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                 servers_config = json.loads(servers_config_json)
             except json.JSONDecodeError as e:
                 raise ValueError(f"mcp_servers_config must be a valid JSON string: {e}")
-            clients = [
+            mcp_clients = [
                 McpSseClient(name, config) for name, config in servers_config.items()
             ]
-            mcp_tools = mcp_sse_util.fetch_mcp_tools(clients)
-            mcp_tool_instances = {tool.identity.name: tool for tool in mcp_tools} if mcp_tools else {}
-            tools.extend(mcp_tools)
-            tool_instances.update(mcp_tool_instances)
+            mcp_tools = mcp_sse_util.fetch_mcp_tools(mcp_clients)
+            mcp_tool_instances = {tool.name: tool for tool in mcp_tools} if mcp_tools else {}
 
         model = fc_params.model
         stop = (
@@ -119,6 +116,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         )
         # convert tools into ModelRuntime Tool format
         prompt_messages_tools = self._init_prompt_tools(tools)
+        prompt_messages_tools.extend(self._init_prompt_mcp_tools(mcp_tools))
 
         iteration_step = 1
         max_iteration_steps = fc_params.maximum_iterations
@@ -291,6 +289,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             tool_responses = []
             for tool_call_id, tool_call_name, tool_call_args in tool_calls:
                 tool_instance = tool_instances[tool_call_name]
+                mcp_tool_instance = mcp_tool_instances.get(tool_call_name)
                 tool_call_started_at = time.perf_counter()
                 tool_call_log = self.create_log_message(
                     label=f"CALL {tool_call_name}",
@@ -303,7 +302,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                     status=ToolInvokeMessage.LogMessage.LogStatus.START,
                 )
                 yield tool_call_log
-                if not tool_instance:
+                if not tool_instance and not mcp_tool_instance:
                     tool_response = {
                         "tool_call_id": tool_call_id,
                         "tool_call_name": tool_call_name,
@@ -314,13 +313,12 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                     }
                 else:
                     try:
-                        tool_invoke_parameters = {**tool_instance.runtime_parameters, **tool_call_args}
-                        if tool_call_name in mcp_tool_instances:
+                        if mcp_tool_instance:
                             # invoke MCP tool
                             result = mcp_sse_util.execute_mcp_tool(
-                                clients=clients,
+                                clients=mcp_clients,
                                 tool_name=tool_instance.identity.name,
-                                arguments=tool_invoke_parameters,
+                                arguments=tool_call_args,
                             )
                         else:
                             # invoke tool
@@ -328,7 +326,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                 provider_type=ToolProviderType(tool_instance.provider_type),
                                 provider=tool_instance.identity.provider,
                                 tool_name=tool_instance.identity.name,
-                                parameters=tool_invoke_parameters,
+                                parameters={**tool_instance.runtime_parameters, **tool_call_args},
                             )
                             result = ""
                             for response in tool_invoke_responses:
@@ -396,9 +394,10 @@ class FunctionCallingAgentStrategy(AgentStrategy):
 
             # update prompt tool
             for prompt_tool in prompt_messages_tools:
-                self.update_prompt_message_tool(
-                    tool_instances[prompt_tool.name], prompt_tool
-                )
+                if prompt_tool.name in tool_instances:
+                    self.update_prompt_message_tool(
+                        tool_instances[prompt_tool.name], prompt_tool
+                    )
             yield self.finish_log_message(
                 log=round_log,
                 data={
@@ -579,3 +578,21 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             # clear messages after the first iteration
             prompt_messages = self._clear_user_prompt_image_messages(prompt_messages)
         return prompt_messages
+
+
+    @staticmethod
+    def _init_prompt_mcp_tools(mcp_tools: list[types.Tool]) -> list[PromptMessageTool]:
+        """
+        Initialize prompt message MCP tools
+        """
+        prompt_messages_tools = []
+
+        for tool in mcp_tools:
+            prompt_message = PromptMessageTool(
+                name=tool.name,
+                description=tool.description,
+                parameters=tool.inputSchema,
+            )
+            prompt_messages_tools.append(prompt_message)
+
+        return prompt_messages_tools
