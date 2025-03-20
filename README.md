@@ -1,7 +1,7 @@
 ## Dify 1.0 Plugin Support MCP SSE Tools Agent strategies
 
 **Author:** [Junjie.M](https://github.com/junjiem)  
-**Version:** 0.0.2  
+**Version:** 0.0.3  
 **Type:** agent-strategy  
 **Github Repo:** [https://github.com/junjiem/dify-plugin-agent-mcp_sse](https://github.com/junjiem/dify-plugin-agent-mcp_sse)   
 **Github Issues:** [issues](https://github.com/junjiem/dify-plugin-agent-mcp_sse/issues)  
