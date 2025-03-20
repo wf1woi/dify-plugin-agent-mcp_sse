@@ -12,9 +12,9 @@
 
 ### Description
 
-Dify official Agent strategies collection (Support MCP SSE fetch and call tools).
+Agent strategies collection (Support MCP SSE fetch and call tools).
 
-Dify 官方 Agent 策略集合（支持 MCP SSE 发现和调用工具）。
+Agent 策略集合（支持 MCP SSE 发现和调用工具）。
 
 ![mcp_sse_agent](_assets/mcp_sse_agent.png)
 
