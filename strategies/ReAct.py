@@ -494,7 +494,7 @@ class ReActAgentStrategy(AgentStrategy):
             action: AgentScratchpadUnit.Action,
             mcp_clients: list[McpSseClient],
             tool_instances: Mapping[str, ToolEntity],
-            mcp_tool_instances: Mapping[str, ToolEntity],
+            mcp_tool_instances: Mapping[str, types.Tool],
             message_file_ids: list[str],
     ) -> tuple[str, dict[str, Any] | str]:
         """
@@ -537,8 +537,8 @@ class ReActAgentStrategy(AgentStrategy):
                 tool_invoke_parameters = tool_call_args
                 result = mcp_sse_util.execute_mcp_tool(
                     clients=mcp_clients,
-                    tool_name=tool_instance.identity.name,
-                    arguments=tool_call_args,
+                    tool_name=mcp_tool_instance.name,
+                    arguments=tool_invoke_parameters,
                 )
             else:
                 # invoke tool

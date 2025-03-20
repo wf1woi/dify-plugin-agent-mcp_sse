@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 from contextlib import AsyncExitStack
 from typing import Any
@@ -124,13 +125,23 @@ def fetch_mcp_tools(clients: list[McpSseClient]) -> list[types.Tool]:
             all_tools.extend(tools)
         return all_tools
 
-    return asyncio.run(fetch_tools())
+    tools = asyncio.run(fetch_tools())
+
+    print("============MCP Tools================")
+    print(json.dumps([tool.model_dump(mode="json") for tool in tools]))
+    print("============================")
+
+    return tools
 
 
 def execute_mcp_tool(clients: list[McpSseClient], tool_name: str, arguments: dict[str, Any]) -> str:
     """
     Execute a MCP Tool
     """
+
+    print("++++++++++++Call MCP Tool++++++++++++++++")
+    print(f"{tool_name}: {arguments}")
+    print("++++++++++++++++++++++++++++")
 
     async def execute_tool():
         for client in clients:
@@ -162,8 +173,13 @@ def execute_mcp_tool(clients: list[McpSseClient], tool_name: str, arguments: dic
                     await client.cleanup()
 
     try:
-        yield asyncio.run(execute_tool())
+        message = asyncio.run(execute_tool())
     except Exception as e:
-        error_msg = f"Error executing tool: {str(e)}"
-        logging.error(error_msg)
-        yield error_msg
+        message = f"Error executing tool: {str(e)}"
+        logging.error(message)
+
+    print("=============Call MCP Tool Result===============")
+    print(message)
+    print("============================")
+
+    return message

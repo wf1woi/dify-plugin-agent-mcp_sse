@@ -288,7 +288,8 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             # call tools
             tool_responses = []
             for tool_call_id, tool_call_name, tool_call_args in tool_calls:
-                tool_instance = tool_instances[tool_call_name]
+                tool_instance = tool_instances.get(tool_call_name)
+                tool_provider = tool_instance.identity.provider if tool_instance else ""
                 mcp_tool_instance = mcp_tool_instances.get(tool_call_name)
                 tool_call_started_at = time.perf_counter()
                 tool_call_log = self.create_log_message(
@@ -296,7 +297,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                     data={},
                     metadata={
                         LogMetadata.STARTED_AT: time.perf_counter(),
-                        LogMetadata.PROVIDER: tool_instance.identity.provider,
+                        LogMetadata.PROVIDER: tool_provider,
                     },
                     parent=round_log,
                     status=ToolInvokeMessage.LogMessage.LogStatus.START,
@@ -312,21 +313,24 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                         ).to_dict(),
                     }
                 else:
+                    tool_invoke_parameters = {}
                     try:
                         if mcp_tool_instance:
                             # invoke MCP tool
+                            tool_invoke_parameters = tool_call_args
                             result = mcp_sse_util.execute_mcp_tool(
                                 clients=mcp_clients,
-                                tool_name=tool_instance.identity.name,
-                                arguments=tool_call_args,
+                                tool_name=mcp_tool_instance.name,
+                                arguments=tool_invoke_parameters,
                             )
                         else:
                             # invoke tool
+                            tool_invoke_parameters = {**tool_instance.runtime_parameters, **tool_call_args}
                             tool_invoke_responses = self.session.tool.invoke(
                                 provider_type=ToolProviderType(tool_instance.provider_type),
                                 provider=tool_instance.identity.provider,
                                 tool_name=tool_instance.identity.name,
-                                parameters={**tool_instance.runtime_parameters, **tool_call_args},
+                                parameters=tool_invoke_parameters,
                             )
                             result = ""
                             for response in tool_invoke_responses:
@@ -362,10 +366,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                     tool_response = {
                         "tool_call_id": tool_call_id,
                         "tool_call_name": tool_call_name,
-                        "tool_call_input": {
-                            **tool_instance.runtime_parameters,
-                            **tool_call_args,
-                        },
+                        "tool_call_input": tool_invoke_parameters,
                         "tool_response": result,
                     }
 
@@ -376,7 +377,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                     },
                     metadata={
                         LogMetadata.STARTED_AT: tool_call_started_at,
-                        LogMetadata.PROVIDER: tool_instance.identity.provider,
+                        LogMetadata.PROVIDER: tool_provider,
                         LogMetadata.FINISHED_AT: time.perf_counter(),
                         LogMetadata.ELAPSED_TIME: time.perf_counter()
                                                   - tool_call_started_at,
