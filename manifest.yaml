@@ -3,11 +3,11 @@ type: plugin
 author: junjiem
 name: mcp_see_agent
 label:
-  en_US: Dify Agent Strategies (Support MCP Tools)
-  zh_Hans: Dify Agent 策略（支持 MCP 工具）
+  en_US: Agent Strategies (Support MCP Tools)
+  zh_Hans: Agent 策略（支持 MCP 工具）
 description:
-  en_US: Dify official Agent strategies collection (Support MCP SSE fetch and call tools).
-  zh_Hans: Dify 官方 Agent 策略集合（支持 MCP SSE 发现和调用工具）。
+  en_US: Agent strategies collection (Support MCP SSE fetch and call tools).
+  zh_Hans: Agent 策略集合（支持 MCP SSE 发现和调用工具）。
 icon: icon.svg
 resource:
   memory: 268435456
