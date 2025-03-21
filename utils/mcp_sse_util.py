@@ -125,7 +125,12 @@ def fetch_mcp_tools(clients: list[McpSseClient]) -> list[types.Tool]:
             all_tools.extend(tools)
         return all_tools
 
-    tools = asyncio.run(fetch_tools())
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        tools = asyncio.run(fetch_tools())
+    else:
+        tools = loop.run_until_complete(fetch_tools())
 
     print("============MCP Tools================")
     print(json.dumps([tool.model_dump(mode="json") for tool in tools]))
@@ -173,7 +178,12 @@ def execute_mcp_tool(clients: list[McpSseClient], tool_name: str, arguments: dic
                     await client.cleanup()
 
     try:
-        message = asyncio.run(execute_tool())
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            message = asyncio.run(execute_tool())
+        else:
+            message = loop.run_until_complete(execute_tool())
     except Exception as e:
         message = f"Error executing tool: {str(e)}"
         logging.error(message)
