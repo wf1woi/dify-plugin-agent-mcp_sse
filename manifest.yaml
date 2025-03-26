@@ -6,8 +6,8 @@ label:
   en_US: Agent Strategies (Support MCP Tools)
   zh_Hans: Agent 策略（支持 MCP 工具）
 description:
-  en_US: Agent strategies collection (Support MCP SSE fetch and call tools).
-  zh_Hans: Agent 策略集合（支持 MCP SSE 发现和调用工具）。
+  en_US: Agent strategies collection that provide Function Calling and ReAct (Support MCP SSE fetch and call tools).
+  zh_Hans: 提供 Function Calling 和 ReAct 的 Agent 策略集合（支持 MCP SSE 发现和调用工具）。
 icon: icon.svg
 resource:
   memory: 268435456
