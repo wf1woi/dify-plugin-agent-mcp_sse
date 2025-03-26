@@ -24,11 +24,9 @@ from dify_plugin.entities.model.message import (
 )
 from dify_plugin.entities.tool import LogMetadata, ToolInvokeMessage, ToolProviderType
 from dify_plugin.interfaces.agent import AgentModelConfig, AgentStrategy, ToolEntity
-from mcp import types
 from pydantic import BaseModel, Field
 
-from utils import mcp_sse_util
-from utils.mcp_sse_util import McpSseClient
+from utils.mcp_client import McpClientsUtil
 
 
 class FunctionCallingParams(BaseModel):
@@ -92,7 +90,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         tool_instances = {tool.identity.name: tool for tool in tools} if tools else {}
 
         # Fetch MCP tools
-        mcp_clients = []
+        servers_config = {}
         mcp_tools = []
         mcp_tool_instances = {}
         servers_config_json = fc_params.mcp_servers_config
@@ -102,11 +100,8 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                 servers_config = json.loads(servers_config_json)
             except json.JSONDecodeError as e:
                 raise ValueError(f"mcp_servers_config must be a valid JSON string: {e}")
-            mcp_clients = [
-                McpSseClient(name, config) for name, config in servers_config.items()
-            ]
-            mcp_tools = mcp_sse_util.fetch_mcp_tools(mcp_clients)
-            mcp_tool_instances = {tool.name: tool for tool in mcp_tools} if mcp_tools else {}
+            mcp_tools = McpClientsUtil.fetch_tools(servers_config)
+            mcp_tool_instances = {tool.get("name"): tool for tool in mcp_tools} if mcp_tools else {}
 
         model = fc_params.model
         stop = (
@@ -318,10 +313,10 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                         if mcp_tool_instance:
                             # invoke MCP tool
                             tool_invoke_parameters = tool_call_args
-                            result = mcp_sse_util.execute_mcp_tool(
-                                clients=mcp_clients,
-                                tool_name=mcp_tool_instance.name,
-                                arguments=tool_invoke_parameters,
+                            result = McpClientsUtil.execute_tool(
+                                servers_config=servers_config,
+                                tool_name=tool_call_name,
+                                tool_args=tool_invoke_parameters,
                             )
                         else:
                             # invoke tool
@@ -580,9 +575,8 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             prompt_messages = self._clear_user_prompt_image_messages(prompt_messages)
         return prompt_messages
 
-
     @staticmethod
-    def _init_prompt_mcp_tools(mcp_tools: list[types.Tool]) -> list[PromptMessageTool]:
+    def _init_prompt_mcp_tools(mcp_tools: list[dict]) -> list[PromptMessageTool]:
         """
         Initialize prompt message MCP tools
         """
@@ -590,9 +584,9 @@ class FunctionCallingAgentStrategy(AgentStrategy):
 
         for tool in mcp_tools:
             prompt_message = PromptMessageTool(
-                name=tool.name,
-                description=tool.description,
-                parameters=tool.inputSchema,
+                name=tool.get("name"),
+                description=tool.get("description", None),
+                parameters=tool.get("inputSchema"),
             )
             prompt_messages_tools.append(prompt_message)
 

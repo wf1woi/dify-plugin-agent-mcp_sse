@@ -32,7 +32,7 @@ MCP服务配置，支持多个MCP服务。 如下示例：
   "server_name1": {
     "url": "http://127.0.0.1:8000/sse",
     "headers": {},
-    "timeout": 5,
+    "timeout": 60,
     "sse_read_timeout": 300
   },
   "server_name2": {

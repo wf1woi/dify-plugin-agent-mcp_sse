@@ -1,2 +1,2 @@
 dify_plugin==0.0.1b73
-mcp==1.1.3
+httpx-sse~=0.4.0
