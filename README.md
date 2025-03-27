@@ -44,11 +44,15 @@ MCP服务配置，支持多个MCP服务。 如下示例：
 
 ### Managed MCP Servers 托管的MCP服务器
 
-If you want to try MCP but don't know how to deploy SSE transport's MCP Server, can you try connect to [composio Managed MCP Servers](https://mcp.composio.dev).
+If you want to try MCP but don't know how to deploy SSE transport's MCP Server, can you try connect to Managed MCP Servers.
 
-如果你想尝试 MCP，但是不知道如何部署 SSE 传输的 MCP Server，可以尝试连接 [composio 托管的 MCP 服务器](https://mcp.composio.dev)。
+如果你想尝试 MCP，但是不知道如何部署 SSE 传输的 MCP Server，可以尝试连接托管的 MCP 服务器。
 
-#### Example 示例
+#### Example 1  示例1
+
+[Composio Managed MCP Servers](https://mcp.composio.dev)
+
+[Composio 托管的 MCP 服务器](https://mcp.composio.dev)
 
 ![composio_mcp_list](_assets/composio_mcp_list.png)
 
@@ -60,12 +64,36 @@ Reference Cursor Settings, shown below:
 
 MCP Servers config, shown below:
 
-MCP服务配置，如下示例：
+MCP 服务配置，如下示例：
 
 ```json
 {
   "tavily": {
     "url": "https://mcp.composio.dev/tavily/xxxx-xxxx-xxxx-xxxx"
+  }
+}
+```
+
+
+
+#### Example 2  示例2
+
+[MCP.so Managed MCP Servers](https://mcp.so/playground)
+
+[MCP.so 托管的 MCP 服务器](https://mcp.so/playground)
+
+![mcpso_mcp_servers](_assets/mcpso_mcp_servers.png)
+
+MCP Servers config, shown below:
+
+MCP 服务配置，如下示例：
+
+```json
+{
+  "mcpServers": {
+    "@tavily-ai/tavily-mcp": {
+      "url": "https://router.mcp.so/sse/xxxxxxxxxx"
+    }
   }
 }
 ```

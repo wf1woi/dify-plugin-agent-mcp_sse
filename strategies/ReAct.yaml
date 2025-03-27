@@ -26,7 +26,7 @@ parameters:
     required: false
     label:
       en_US: MCP Servers config
-      zh_Hans: MCP服务配置
+      zh_Hans: MCP 服务配置
     help:
       en_US: "MCP Servers config, support multiple MCP services. 
         (`sse_read_timeout` determines how long (in seconds) the client will wait for a new event before disconnecting. 

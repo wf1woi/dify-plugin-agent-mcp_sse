@@ -124,6 +124,8 @@ class McpClient:
 
 
 def init_clients(servers_config: dict[str, Any]) -> list[McpClient]:
+    if "mcpServers" in servers_config:
+        servers_config = servers_config["mcpServers"]
     return [
         McpClient(
             url=config.get("url"),
