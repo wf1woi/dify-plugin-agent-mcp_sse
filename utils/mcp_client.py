@@ -99,7 +99,13 @@ class McpClient:
                 }
             }
         }
-        return self.send_message(init_data)
+        self.send_message(init_data)
+        notify_data = {
+            "jsonrpc": "2.0",
+            "method": "notifications/initialized",
+            "params": {}
+        }
+        self.send_message(notify_data)
 
     def list_tools(self):
         tools_data = {
