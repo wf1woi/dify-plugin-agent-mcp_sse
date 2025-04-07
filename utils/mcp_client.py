@@ -9,6 +9,10 @@ import httpx
 from httpx_sse import connect_sse
 
 
+def remove_request_params(url: str) -> str:
+    return urljoin(url, urlparse(url).path)
+
+
 class McpClient:
     def __init__(self, url: str,
                  headers: dict[str, Any] | None = None,
@@ -17,10 +21,9 @@ class McpClient:
                  ):
         self.url = url
         self.timeout = timeout
-        parsed_url = urlparse(url)
-        self.base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
-        self.message_endpoint = None
-        self.session = httpx.Client(headers=headers, timeout=httpx.Timeout(timeout, read=sse_read_timeout))
+        self.sse_read_timeout = sse_read_timeout
+        self.endpoint_url = None
+        self.client = httpx.Client(headers=headers)
         self._request_id = 0
         self.message_queue = Queue()
         self.response_ready = Event()
@@ -30,28 +33,42 @@ class McpClient:
         self.connect()
 
     def _listen_messages(self) -> None:
+        logging.info(f"Connecting to SSE endpoint: {remove_request_params(self.url)}")
         with connect_sse(
-                client=self.session,
+                client=self.client,
                 method="GET",
-                url=self.url
+                url=self.url,
+                timeout=httpx.Timeout(self.timeout, read=self.sse_read_timeout),
         ) as event_source:
             event_source.response.raise_for_status()
-            for event in event_source.iter_sse():
-                if self.should_stop.is_set():
-                    break
-                if event.event == 'endpoint':
-                    self.message_endpoint = event.data
-                    self._connected.set()
-                elif event.event == "message":
-                    message = json.loads(event.data)
-                    self.message_queue.put(message)
-                    self.response_ready.set()
+            logging.debug("SSE connection established")
+            for sse in event_source.iter_sse():
+                logging.debug(f"Received SSE event: {sse.event}")
+                match sse.event:
+                    case "endpoint":
+                        self.endpoint_url = urljoin(self.url, sse.data)
+                        logging.info(f"Received endpoint URL: {self.endpoint_url}")
+                        self._connected.set()
+                        url_parsed = urlparse(self.url)
+                        endpoint_parsed = urlparse(self.endpoint_url)
+                        if (url_parsed.netloc != endpoint_parsed.netloc
+                                or url_parsed.scheme != endpoint_parsed.scheme):
+                            error_msg = f"Endpoint origin does not match connection origin: {self.endpoint_url}"
+                            logging.error(error_msg)
+                            raise ValueError(error_msg)
+                    case "message":
+                        message = json.loads(sse.data)
+                        logging.debug(f"Received server message: {message}")
+                        self.message_queue.put(message)
+                        self.response_ready.set()
+                    case _:
+                        logging.warning(f"Unknown SSE event: {sse.event}")
 
     def send_message(self, data: dict):
-        if not self.message_endpoint:
+        if not self.endpoint_url:
             raise RuntimeError("please call connect() first")
-        response = self.session.post(
-            url=urljoin(self.base_url, self.message_endpoint),
+        response = self.client.post(
+            url=self.endpoint_url,
             json=data,
             headers={'Content-Type': 'application/json'},
             timeout=self.timeout
@@ -81,7 +98,7 @@ class McpClient:
 
     def close(self) -> None:
         self.should_stop.is_set()
-        self.session.close()
+        self.client.close()
         if self._listen_thread and self._listen_thread.is_alive():
             self._listen_thread.join(timeout=10)
 
