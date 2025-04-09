@@ -502,10 +502,13 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         prompt_messages_tools = []
 
         for tool in mcp_tools:
+            parameters = tool.get("inputSchema")
+            if "properties" not in parameters:
+                parameters["properties"] = {}
             prompt_message = PromptMessageTool(
                 name=tool.get("name"),
                 description=tool.get("description", None),
-                parameters=tool.get("inputSchema"),
+                parameters=parameters,
             )
             prompt_messages_tools.append(prompt_message)
 
