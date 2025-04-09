@@ -67,6 +67,7 @@ class McpClient:
     def send_message(self, data: dict):
         if not self.endpoint_url:
             raise RuntimeError("please call connect() first")
+        logging.debug(f"Sending client message: {data}")
         response = self.client.post(
             url=self.endpoint_url,
             json=data,
@@ -74,6 +75,7 @@ class McpClient:
             timeout=self.timeout
         )
         response.raise_for_status()
+        logging.debug(f"Client message sent successfully: {response.status_code}")
         if "id" in data:
             message_id = data["id"]
             while True:
