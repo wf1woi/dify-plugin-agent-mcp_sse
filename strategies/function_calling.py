@@ -505,6 +505,8 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             parameters = tool.get("inputSchema")
             if "properties" not in parameters:
                 parameters["properties"] = {}
+            if "required" not in parameters:
+                parameters["required"] = []
             prompt_message = PromptMessageTool(
                 name=tool.get("name"),
                 description=tool.get("description", None),
