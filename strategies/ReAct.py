@@ -30,7 +30,7 @@ from pydantic import BaseModel
 
 from output_parser.cot_output_parser import CotAgentOutputParser
 from prompt.template import REACT_PROMPT_TEMPLATES
-from utils.mcp_client import McpClientsUtil
+from utils.mcp_client import McpClients
 
 ignore_observation_providers = ["wenxin"]
 
@@ -134,7 +134,7 @@ class ReActAgentStrategy(AgentStrategy):
         tool_instances = {tool.identity.name: tool for tool in tools} if tools else {}
 
         # Fetch MCP tools
-        servers_config = {}
+        mcp_clients = None
         mcp_tools = []
         mcp_tool_instances = {}
         servers_config_json = react_params.mcp_servers_config
@@ -144,7 +144,8 @@ class ReActAgentStrategy(AgentStrategy):
                 servers_config = json.loads(servers_config_json)
             except json.JSONDecodeError as e:
                 raise ValueError(f"mcp_servers_config must be a valid JSON string: {e}")
-            mcp_tools = McpClientsUtil.fetch_tools(servers_config)
+            mcp_clients = McpClients(servers_config)
+            mcp_tools = mcp_clients.fetch_tools()
             mcp_tool_instances = {tool.get("name"): tool for tool in mcp_tools} if mcp_tools else {}
 
         react_params.model.completion_params = (
@@ -306,7 +307,7 @@ class ReActAgentStrategy(AgentStrategy):
                         self._handle_invoke_action(
                             action=scratchpad.action,
                             tool_instances=tool_instances,
-                            servers_config=servers_config,
+                            mcp_clients=mcp_clients,
                             mcp_tool_instances=mcp_tool_instances,
                             message_file_ids=message_file_ids,
                         )
@@ -367,6 +368,10 @@ class ReActAgentStrategy(AgentStrategy):
                 },
             )
             iteration_step += 1
+
+        # All MCP Client close
+        if mcp_clients:
+            mcp_clients.close()
 
         yield self.create_text_message(final_answer)
         yield self.create_json_message(
@@ -450,7 +455,7 @@ class ReActAgentStrategy(AgentStrategy):
     def _handle_invoke_action(
             self,
             action: AgentScratchpadUnit.Action,
-            servers_config: dict[str, Any],
+            mcp_clients: McpClients | None,
             tool_instances: Mapping[str, ToolEntity],
             mcp_tool_instances: Mapping[str, dict],
             message_file_ids: list[str],
@@ -458,7 +463,7 @@ class ReActAgentStrategy(AgentStrategy):
         """
         handle invoke action
         :param action: action
-        :param servers_config: MCP Servers config
+        :param mcp_clients: MCP Clients
         :param tool_instances: tool instances
         :param mcp_tool_instances: MCP tool instances
         :param message_file_ids: message file ids
@@ -493,8 +498,7 @@ class ReActAgentStrategy(AgentStrategy):
             if mcp_tool_instance:
                 # invoke MCP tool
                 tool_invoke_parameters = tool_call_args
-                result = McpClientsUtil.execute_tool(
-                    servers_config=servers_config,
+                result = mcp_clients.execute_tool(
                     tool_name=tool_call_name,
                     tool_args=tool_invoke_parameters,
                 )

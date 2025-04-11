@@ -26,7 +26,7 @@ from dify_plugin.entities.tool import LogMetadata, ToolInvokeMessage, ToolProvid
 from dify_plugin.interfaces.agent import AgentModelConfig, AgentStrategy, ToolEntity, ToolInvokeMeta
 from pydantic import BaseModel
 
-from utils.mcp_client import McpClientsUtil
+from utils.mcp_client import McpClients
 
 
 class FunctionCallingParams(BaseModel):
@@ -69,7 +69,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         tool_instances = {tool.identity.name: tool for tool in tools} if tools else {}
 
         # Fetch MCP tools
-        servers_config = {}
+        mcp_clients = None
         mcp_tools = []
         mcp_tool_instances = {}
         servers_config_json = fc_params.mcp_servers_config
@@ -79,7 +79,8 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                 servers_config = json.loads(servers_config_json)
             except json.JSONDecodeError as e:
                 raise ValueError(f"mcp_servers_config must be a valid JSON string: {e}")
-            mcp_tools = McpClientsUtil.fetch_tools(servers_config)
+            mcp_clients = McpClients(servers_config)
+            mcp_tools = mcp_clients.fetch_tools()
             mcp_tool_instances = {tool.get("name"): tool for tool in mcp_tools} if mcp_tools else {}
 
         # convert tools into ModelRuntime Tool format
@@ -281,8 +282,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                         if mcp_tool_instance:
                             # invoke MCP tool
                             tool_invoke_parameters = tool_call_args
-                            result = McpClientsUtil.execute_tool(
-                                servers_config=servers_config,
+                            result = mcp_clients.execute_tool(
                                 tool_name=tool_call_name,
                                 tool_args=tool_invoke_parameters,
                             )
@@ -373,6 +373,10 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                 },
             )
             iteration_step += 1
+
+        # All MCP Client close
+        if mcp_clients:
+            mcp_clients.close()
 
         yield self.create_json_message(
             {
