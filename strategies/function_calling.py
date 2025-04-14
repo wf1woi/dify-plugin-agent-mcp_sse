@@ -5,6 +5,7 @@ from collections.abc import Generator
 from copy import deepcopy
 from typing import Any, Optional, cast
 
+import pydantic
 from dify_plugin.entities.agent import AgentInvokeMessage
 from dify_plugin.entities.model import ModelFeature
 from dify_plugin.entities.model.llm import (
@@ -56,7 +57,11 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         """
         Run FunctionCall agent application
         """
-        fc_params = FunctionCallingParams(**parameters)
+
+        try:
+            fc_params = FunctionCallingParams(**parameters)
+        except pydantic.ValidationError as e:
+            raise ValueError(f"Invalid parameters: {e!s}") from e
 
         # init prompt messages
         query = fc_params.query
