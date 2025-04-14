@@ -85,7 +85,8 @@ class ReActAgentStrategy(AgentStrategy):
                     [
                         tool.model_dump(mode="json")
                         for tool in self._prompt_messages_tools
-                    ]
+                    ],
+                    ensure_ascii=False
                 ),
             )
             .replace(
@@ -97,6 +98,10 @@ class ReActAgentStrategy(AgentStrategy):
         return SystemPromptMessage(content=system_prompt)
 
     def _invoke(self, parameters: dict[str, Any]) -> Generator[AgentInvokeMessage]:
+        """
+        Run ReAct agent application
+        """
+
         try:
             react_params = ReActParams(**parameters)
         except pydantic.ValidationError as e:
