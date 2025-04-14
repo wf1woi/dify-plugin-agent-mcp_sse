@@ -143,13 +143,17 @@ class McpClient:
                 }
             }
         }
-        self.send_message(init_data)
+        response = self.send_message(init_data)
+        if "error" in response:
+            raise Exception(f"MCP Server initialize error: {response['error']}")
         notify_data = {
             "jsonrpc": "2.0",
             "method": "notifications/initialized",
             "params": {}
         }
-        self.send_message(notify_data)
+        response = self.send_message(notify_data)
+        if "error" in response:
+            raise Exception(f"MCP Server notifications/initialized error: {response['error']}")
 
     def list_tools(self):
         tools_data = {
@@ -158,7 +162,10 @@ class McpClient:
             "method": "tools/list",
             "params": {}
         }
-        return self.send_message(tools_data).get("result", {}).get("tools", [])
+        response = self.send_message(tools_data)
+        if "error" in response:
+            raise Exception(f"MCP Server tools/list error: {response['error']}")
+        return response.get("result", {}).get("tools", [])
 
     def call_tool(self, tool_name: str, tool_args: dict):
         call_data = {
@@ -170,7 +177,10 @@ class McpClient:
                 "arguments": tool_args
             }
         }
-        return self.send_message(call_data).get("result", {}).get("content", [])
+        response = self.send_message(call_data)
+        if "error" in response:
+            raise Exception(f"MCP Server tools/call error: {response['error']}")
+        return response.get("result", {}).get("content", [])
 
 
 class McpClients:
