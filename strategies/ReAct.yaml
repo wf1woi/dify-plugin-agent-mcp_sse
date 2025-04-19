@@ -29,14 +29,11 @@ parameters:
     label:
       en_US: MCP Servers config
       zh_Hans: MCP 服务配置
-    default: "{\n  \"server_name\": {\n    \"url\": \"http://127.0.0.1:8000/sse\",\n    \"headers\": {},\n
-      \"timeout\": 60,\n    \"sse_read_timeout\": 300\n  }\n}"
+    default: "{\n  \"server_name1\": {\n    \"transport\": \"sse\",\n    \"url\": \"http://127.0.0.1:8000/sse\"\n  },
+    \n  \"server_name2\": {\n    \"transport\": \"streamable_http\",\n    \"url\": \"http://127.0.0.1:8000/mcp\"\n  }\n}"
     help:
-      en_US: "MCP Servers config, support multiple MCP Server. 
-        (`sse_read_timeout` determines how long (in seconds) the client will wait for a new event before disconnecting. 
-        All other HTTP operations are controlled by `timeout`.)"
-      zh_Hans: "MCP服务配置，支持多个MCP服务。
-        （`sse_read_timeout`决定客户端在断开连接之前等待新事件的时间（以秒为单位）。所有其他HTTP操作都由`timeout`控制。）"
+      en_US: "MCP Servers config, support multiple MCP Server."
+      zh_Hans: "MCP服务配置，支持多个MCP服务。"
   - name: instruction
     type: string
     required: true
@@ -59,7 +56,7 @@ parameters:
     label:
       en_US: Maximum Iterations
       zh_Hans: 最大迭代次数
-    default: 3
+    default: 5
     min: 1
     max: 30
 extra:

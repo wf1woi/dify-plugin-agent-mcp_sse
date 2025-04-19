@@ -1,19 +1,45 @@
 import json
 import logging
+from abc import ABC, abstractmethod
 from queue import Queue, Empty
 from threading import Event, Thread
 from typing import Any
 from urllib.parse import urljoin, urlparse
 
 import httpx
+from httpx import Response
 from httpx_sse import connect_sse
+
+
+class McpClient(ABC):
+    """Interface for MCP client."""
+
+    @abstractmethod
+    def close(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def initialize(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def list_tools(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def call_tool(self, tool_name: str, tool_args: dict):
+        raise NotImplementedError
 
 
 def remove_request_params(url: str) -> str:
     return urljoin(url, urlparse(url).path)
 
 
-class McpClient:
+class McpSseClient(McpClient):
+    """
+    HTTP with SSE transport MCP client.
+    """
+
     def __init__(self, name: str, url: str,
                  headers: dict[str, Any] | None = None,
                  timeout: float = 60,
@@ -138,8 +164,8 @@ class McpClient:
                 "protocolVersion": "2024-11-05",
                 "capabilities": {},
                 "clientInfo": {
-                    "name": "mcp",
-                    "version": "0.1.0"
+                    "name": "MCP HTTP with SSE Client",
+                    "version": "1.0.0"
                 }
             }
         }
@@ -183,23 +209,128 @@ class McpClient:
         return response.get("result", {}).get("content", [])
 
 
+class McpStreamableHttpClient(McpClient):
+    """
+    Streamable HTTP transport MCP client.
+    """
+
+    def __init__(self, name: str, url: str,
+                 headers: dict[str, Any] | None = None,
+                 timeout: float = 60,
+                 ):
+        self.name = name
+        self.url = url
+        self.timeout = timeout
+        self.client = httpx.Client(headers=headers)
+        self.session_id = None
+
+    def close(self) -> None:
+        try:
+            self.client.close()
+        except Exception as e:
+            raise Exception(f"{self.name} - MCP Server connection close failed: {str(e)}")
+
+    def send_message(self, data: dict) -> Response:
+        headers = {"Content-Type": "application/json"}
+        if self.session_id:
+            headers["Mcp-Session-Id"] = self.session_id
+        logging.debug(f"{self.name} - Sending client message: {data}")
+        response = self.client.post(
+            url=self.url,
+            json=data,
+            headers=headers,
+            timeout=self.timeout
+        )
+        logging.debug(f"{self.name} - Client message sent successfully: {response.status_code}")
+        return response
+
+    def initialize(self):
+        init_data = {
+            "jsonrpc": "2.0",
+            "id": 0,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": {
+                    "name": "MCP Streamable HTTP Client",
+                    "version": "1.0.0"
+                }
+            }
+        }
+        response = self.send_message(init_data)
+        self.session_id = response.headers.get("mcp-session-id", None)
+        response_data = response.json()
+        if "error" in response_data:
+            raise Exception(f"MCP Server initialize error: {response_data['error']}")
+        notify_data = {
+            "jsonrpc": "2.0",
+            "method": "notifications/initialized",
+            "params": {}
+        }
+        self.send_message(notify_data)
+
+    def list_tools(self):
+        tools_data = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/list",
+            "params": {}
+        }
+        response = self.send_message(tools_data)
+        response_data = response.json()
+        if "error" in response_data:
+            raise Exception(f"MCP Server tools/list error: {response_data['error']}")
+        return response_data.get("result", {}).get("tools", [])
+
+    def call_tool(self, tool_name: str, tool_args: dict):
+        call_data = {
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {
+                "name": tool_name,
+                "arguments": tool_args
+            }
+        }
+        response = self.send_message(call_data)
+        response_data = response.json()
+        if "error" in response_data:
+            raise Exception(f"MCP Server tools/call error: {response_data['error']}")
+        return response_data.get("result", {}).get("content", [])
+
+
 class McpClients:
     def __init__(self, servers_config: dict[str, Any]):
         if "mcpServers" in servers_config:
             servers_config = servers_config["mcpServers"]
         self._clients = {
-            name: McpClient(
-                name=name,
-                url=config.get("url"),
-                headers=config.get("headers", None),
-                timeout=config.get("timeout", 60),
-                sse_read_timeout=config.get("sse_read_timeout", 300),
-            )
+            name: self.init_client(name, config)
             for name, config in servers_config.items()
         }
         for client in self._clients.values():
             client.initialize()
         self._tools = {}
+
+    @staticmethod
+    def init_client(name: str, config: dict[str, Any]) -> McpClient:
+        transport = "sse"
+        if "transport" in config:
+            transport = config["transport"]
+        if transport == "streamable_http":
+            return McpStreamableHttpClient(
+                name=name,
+                url=config.get("url"),
+                headers=config.get("headers", None),
+                timeout=config.get("timeout", 60),
+            )
+        return McpSseClient(
+            name=name,
+            url=config.get("url"),
+            headers=config.get("headers", None),
+            timeout=config.get("timeout", 60),
+            sse_read_timeout=config.get("sse_read_timeout", 300),
+        )
 
     def fetch_tools(self) -> list[dict]:
         try:
