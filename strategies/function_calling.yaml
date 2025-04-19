@@ -25,12 +25,14 @@ parameters:
       zh_Hans: 工具列表
   - name: mcp_servers_config
     type: string
-    required: false
+    required: true
     label:
       en_US: MCP Servers config
       zh_Hans: MCP 服务配置
+    default: "{\n  \"server_name\": {\n    \"url\": \"http://127.0.0.1:8000/sse\",\n    \"headers\": {},\n
+      \"timeout\": 60,\n    \"sse_read_timeout\": 300\n  }\n}"
     help:
-      en_US: "MCP Servers config, support multiple MCP services. 
+      en_US: "MCP Servers config, support multiple MCP Server. 
         (`sse_read_timeout` determines how long (in seconds) the client will wait for a new event before disconnecting. 
         All other HTTP operations are controlled by `timeout`.)"
       zh_Hans: "MCP服务配置，支持多个MCP服务。
@@ -57,7 +59,7 @@ parameters:
     label:
       en_US: Maximum Iterations
       zh_Hans: 最大迭代次数
-    default: 3
+    default: 5
     max: 30
     min: 1
 extra:
