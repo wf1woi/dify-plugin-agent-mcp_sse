@@ -1,4 +1,4 @@
-## Dify 1.0 Plugin Support MCP SSE Tools Agent strategies
+## Dify 1.0 Plugin Support MCP Tools Agent strategies
 
 **Author:** [Junjie.M](https://github.com/junjiem)   
 **Type:** agent-strategy  
@@ -11,9 +11,11 @@
 
 ### Description
 
-Agent strategies collection (Support MCP SSE fetch and call tools).
+Agent strategies collection that provide `Function Calling` and `ReAct` 
+(Support `fetch and call tools` by `MCP` protocol through `HTTP with SSE` or `Streamable HTTP` transport).
 
-Agent 策略集合（支持 MCP SSE 发现和调用工具）。
+提供 `Function Calling` 和 `ReAct` 的 Agent 策略集合
+（支持通过 `HTTP with SSE` 或 `Streamable HTTP` 传输方式使用 `MCP` 协议来`发现和调用工具`）。
 
 ![mcp_sse_agent](_assets/mcp_sse_agent.png)
 
@@ -29,13 +31,25 @@ MCP服务配置，支持多个MCP服务。 如下示例：
 ```json
 {
   "server_name1": {
+    "transport": "sse",
     "url": "http://127.0.0.1:8000/sse",
     "headers": {},
     "timeout": 60,
     "sse_read_timeout": 300
   },
   "server_name2": {
+    "transport": "sse",
     "url": "http://127.0.0.1:8001/sse"
+  },
+  "server_name3": {
+    "transport": "streamable_http",
+    "url": "http://127.0.0.1:8002/mcp",
+    "headers": {},
+    "timeout": 60
+  },
+  "server_name4": {
+    "transport": "streamable_http",
+    "url": "http://127.0.0.1:8003/mcp"
   }
 }
 ```
@@ -44,17 +58,33 @@ OR
 {
   "mcpServers": {
       "server_name1": {
+        "transport": "sse",
         "url": "http://127.0.0.1:8000/sse",
         "headers": {},
         "timeout": 60,
         "sse_read_timeout": 300
       },
       "server_name2": {
+        "transport": "sse",
         "url": "http://127.0.0.1:8001/sse"
+      },
+      "server_name3": {
+        "transport": "streamable_http",
+        "url": "http://127.0.0.1:8002/mcp",
+        "headers": {},
+        "timeout": 60
+      },
+      "server_name4": {
+        "transport": "streamable_http",
+        "url": "http://127.0.0.1:8003/mcp"
       }
     }
 }
 ```
+
+> **Note:** "transport" parameter as `sse` or `streamable_http`, default `sse`.
+
+> **注：**  "transport" 参数为 `sse` 或 `streamable_http` ，默认为 `sse`。
 
 
 
@@ -136,6 +166,46 @@ Click "Add a new action" to add the required MCP service instance.
 You can also continue to add different actions to enrich the tool set available to the Agent.
 
 你还可以继续添加不同的 Action，丰富 Agent 可用的工具集。
+
+
+#### Example 3  示例3
+
+[MCP.so Managed MCP Servers](https://mcp.so/playground)
+
+[MCP.so 托管的 MCP 服务器](https://mcp.so/playground)
+
+##### `Streamable HTTP`
+
+![mcpso_mcp_servers_streamable_http](_assets/mcpso_mcp_servers_streamable_http.png)
+
+MCP Servers config, shown below:
+
+MCP 服务配置，如下示例：
+
+```json
+{
+  "tavily-mcp": {
+    "transport": "streamable_http",
+    "url": "https://router.mcp.so/mcp/xxxxxxxxxxx"
+  }
+}
+```
+
+##### `SSE` 
+
+![mcpso_mcp_servers_sse](_assets/mcpso_mcp_servers_sse.png)
+
+MCP Servers config, shown below:
+
+MCP 服务配置，如下示例：
+
+```json
+{
+  "tavily-mcp": {
+    "url": "https://router.mcp.so/sse/xxxxxxxxxxx"
+  }
+}
+```
 
 
 
