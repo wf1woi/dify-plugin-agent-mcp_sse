@@ -1,5 +1,4 @@
 import json
-import re
 import time
 from collections.abc import Generator
 from copy import deepcopy
@@ -82,7 +81,6 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         servers_config_json = fc_params.mcp_servers_config
         if servers_config_json:
             try:
-                servers_config_json = re.sub(r"(?<!\\)'", '"', servers_config_json)
                 servers_config = json.loads(servers_config_json)
             except json.JSONDecodeError as e:
                 raise ValueError(f"mcp_servers_config must be a valid JSON string: {e}")
