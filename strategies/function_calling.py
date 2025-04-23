@@ -516,7 +516,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                 parameters["required"] = []
             prompt_message = PromptMessageTool(
                 name=tool.get("name"),
-                description=tool.get("description", None),
+                description=tool.get("description", ""),
                 parameters=parameters,
             )
             prompt_messages_tools.append(prompt_message)

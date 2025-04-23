@@ -583,7 +583,7 @@ class ReActAgentStrategy(AgentStrategy):
         for tool in mcp_tools:
             prompt_message = PromptMessageTool(
                 name=tool.get("name"),
-                description=tool.get("description", None),
+                description=tool.get("description", ""),
                 parameters=tool.get("inputSchema"),
             )
             prompt_messages_tools.append(prompt_message)
