@@ -351,8 +351,10 @@ class McpClients:
             for tool in tools:
                 if server_name in self._clients:
                     tool_clients[tool["name"]] = self._clients[server_name]
-        client = tool_clients.get(tool_name)
+        client = tool_clients.get(tool_name, None)
         try:
+            if not client:
+                raise Exception(f"there is not a tool named {tool_name}")
             result = client.call_tool(tool_name, tool_args)
             if isinstance(result, dict) and "progress" in result:
                 progress = result["progress"]
