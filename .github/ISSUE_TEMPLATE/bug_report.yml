@@ -23,6 +23,16 @@ body:
       required: true
   - type: dropdown
     attributes:
+      label: Function Calling or ReAct
+      description: Which agent strategies? 哪种 Agent 策略？
+      multiple: true
+      options:
+        - Function Calling
+        - ReAct
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
       label: HTTP with SSE or Streamable HTTP
       description: Which transports? 哪种传输？
       multiple: true
