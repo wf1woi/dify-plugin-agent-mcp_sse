@@ -34,8 +34,8 @@ MCP服务配置，支持多个MCP服务。 如下示例：
     "transport": "sse",
     "url": "http://127.0.0.1:8000/sse",
     "headers": {},
-    "timeout": 30,
-    "sse_read_timeout": 30
+    "timeout": 50,
+    "sse_read_timeout": 50
   },
   "server_name2": {
     "transport": "sse",
@@ -45,7 +45,7 @@ MCP服务配置，支持多个MCP服务。 如下示例：
     "transport": "streamable_http",
     "url": "http://127.0.0.1:8002/mcp",
     "headers": {},
-    "timeout": 30
+    "timeout": 50
   },
   "server_name4": {
     "transport": "streamable_http",
@@ -61,8 +61,8 @@ OR
         "transport": "sse",
         "url": "http://127.0.0.1:8000/sse",
         "headers": {},
-        "timeout": 30,
-        "sse_read_timeout": 30
+        "timeout": 50,
+        "sse_read_timeout": 50
       },
       "server_name2": {
         "transport": "sse",
@@ -72,7 +72,7 @@ OR
         "transport": "streamable_http",
         "url": "http://127.0.0.1:8002/mcp",
         "headers": {},
-        "timeout": 30
+        "timeout": 50
       },
       "server_name4": {
         "transport": "streamable_http",
