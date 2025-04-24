@@ -42,8 +42,8 @@ class McpSseClient(McpClient):
 
     def __init__(self, name: str, url: str,
                  headers: dict[str, Any] | None = None,
-                 timeout: float = 60,
-                 sse_read_timeout: float = 60 * 5,
+                 timeout: float = 30,
+                 sse_read_timeout: float = 30,
                  ):
         self.name = name
         self.url = url
@@ -216,7 +216,7 @@ class McpStreamableHttpClient(McpClient):
 
     def __init__(self, name: str, url: str,
                  headers: dict[str, Any] | None = None,
-                 timeout: float = 60,
+                 timeout: float = 30,
                  ):
         self.name = name
         self.url = url
@@ -322,14 +322,14 @@ class McpClients:
                 name=name,
                 url=config.get("url"),
                 headers=config.get("headers", None),
-                timeout=config.get("timeout", 60),
+                timeout=config.get("timeout", 30),
             )
         return McpSseClient(
             name=name,
             url=config.get("url"),
             headers=config.get("headers", None),
-            timeout=config.get("timeout", 60),
-            sse_read_timeout=config.get("sse_read_timeout", 300),
+            timeout=config.get("timeout", 30),
+            sse_read_timeout=config.get("sse_read_timeout", 30),
         )
 
     def fetch_tools(self) -> list[dict]:
