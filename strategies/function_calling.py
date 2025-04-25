@@ -1,5 +1,6 @@
 import json
 import time
+import subprocess
 from collections.abc import Generator
 from copy import deepcopy
 from typing import Any, Optional, cast
@@ -81,7 +82,9 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         servers_config_json = fc_params.mcp_servers_config
         if servers_config_json:
             try:
-                servers_config = json.loads(servers_config_json)
+                config = json.loads(servers_config_json)
+                # 支持 mcpServers 包装形式
+                servers_config = config.get("mcpServers", config)
             except json.JSONDecodeError as e:
                 raise ValueError(f"mcp_servers_config must be a valid JSON string: {e}")
             mcp_clients = McpClients(servers_config)
@@ -260,7 +263,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             for tool_call_id, tool_call_name, tool_call_args in tool_calls:
                 tool_instance = tool_instances.get(tool_call_name)
                 tool_provider = tool_instance.identity.provider if tool_instance else ""
-                mcp_tool_instance = mcp_tool_instances.get(tool_call_name)
+                 = s.get(tool_call_name)
                 tool_call_started_at = time.perf_counter()
                 tool_call_log = self.create_log_message(
                     label=f"CALL {tool_call_name}",
@@ -273,7 +276,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                     status=ToolInvokeMessage.LogMessage.LogStatus.START,
                 )
                 yield tool_call_log
-                if not tool_instance and not mcp_tool_instance:
+                if not tool_instance and not :
                     tool_response = {
                         "tool_call_id": tool_call_id,
                         "tool_call_name": tool_call_name,
@@ -287,10 +290,36 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                         if mcp_tool_instance:
                             # invoke MCP tool
                             tool_invoke_parameters = tool_call_args
-                            result = mcp_clients.execute_tool(
-                                tool_name=tool_call_name,
-                                tool_args=tool_invoke_parameters,
-                            )
+                            # 检查是否是本地命令执行
+                            server_config = servers_config.get(tool_call_name)
+                            if server_config and "command" in server_config:
+                                # 执行本地命令
+                                command = server_config["command"]
+                                args = server_config.get("args", [])
+                                
+                                # 构建完整命令
+                                cmd_list = [command] + args
+                                
+                                # 执行命令并获取输出
+                                try:
+                                    process = subprocess.run(
+                                        cmd_list,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE,
+                                        text=True,
+                                        check=True
+                                    )
+                                    result = process.stdout
+                                except subprocess.CalledProcessError as e:
+                                    result = f"Command execution failed: {e}\nStderr: {e.stderr}"
+                                except Exception as e:
+                                    result = f"Failed to execute command: {e}"
+                            else:
+                                # 常规 MCP 工具执行
+                                result = mcp_clients.execute_tool(
+                                    tool_name=tool_call_name,
+                                    tool_args=tool_invoke_parameters,
+                                )
                         else:
                             # invoke tool
                             tool_invoke_parameters = {**tool_instance.runtime_parameters, **tool_call_args}
